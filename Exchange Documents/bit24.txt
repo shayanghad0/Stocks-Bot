@@ -1,0 +1,1825 @@
+https://docs.bit24.cash/#
+
+
+NAV 
+
+مستندات API بیت24
+احراز هویت و توکن
+راهنما شروع به کار با API
+اطلاعات شبکه های قابل برداشت
+برداشت
+اطلاعات شبکه های قابل واریز
+اطلاعات دارایی
+اطلاعات مجموع دارایی
+تاریخچه کیف پول
+لیست سفارشات
+جزئیات سفارش
+ثبت سفارش
+لغو سفارش
+ویرایش سفارش
+تعقیب قیمت سفارش (Chase Order)
+مفاهیم HTTP CODE
+سایت بیت24
+مستندات API بیت24
+اینجا صفحه مستندات API صرافی بیت ۲۴ است. بیت ۲۴ با هدف کمک به کاربران و توسعه‌دهندگان، API خود را در اختیار آ‌ن‌ها قرار داده است تا ضمن اطلاع از آخرین قیمت‌ها و ارزیابی وضعیت بازار، به قابلیت مدیریت خودکار حساب کاربری دسترسی داشته باشند. با استفاده از API همیشه چند قدم جلوتر از سایر کاربران حرکت کرده و علاوه بر معامله در بهترین قیمت‌های ممکن، امکانات نوین ترید را در اختیار خواهید داشت.
+
+قبل شروع کار با API بیت ۲۴ حتما قوانین کلی این صرافی و همچنین شرایط و مقررات مربوط به استفاده از API را مرور کنید. از طرفی، با توجه به این که احتمال بروزرسانی یا اعمال یک سری تغییرات در ساختار و جزئیات API وجود دارد، بهتر است برای مشاهده سریع و به موقع آخرین اطلاعیه‌ها، کانال رسمی ما در تلگرام را دنبال کنید. یکی از نکات حائز اهمیت در زمان ایجاد کدهایی که از API بیت ۲۴ استفاده می‌کنند، در نظر گرفتن عکس‌العمل‌های مناسب در مواجهه با خطا و حالت‌های پیش‌بینی نشده است. از آن جایی که با، بازاری بسیار پر نوسان سروکار داریم، توصیه می‌کنیم کدهای حاوی API صرافی بیت ۲۴ با رعایت تمام اصول و در نظر گرفتن ملاحظاتی همچون کنترل نرخ درخواست‌ها در شرایط مختلف، مدیریت حالت‌های خطا، پیش‌گیری از تشدید آبشاری خطاها، سازوکارهای حفاظت در عمق، وجود سامانه‌های مانیتورینگ و اعلان، وجود سازوکارهای مدیریت ریسک و دیگر موارد ضروری توسعه داده شوند.
+
+اگر قبلا از API بیت ۲۴ استفاده نکرده اید، کار خود را با ورود به بخش،راهنمای شروع به کار با API آغاز کنید.
+
+احراز هویت و توکن
+X-BIT24-APIKEY: *******DDF**78*************186
+برای استفاده از APIها نیاز به ارسال توکن وجود دارد. این توکن باید در HTTP Header درخواست به صورت زیر ارسال شود:
+
+X-BIT24-APIKEY: *******DDF**78*************186
+
+ به هیچ عنوان توکن خود را در اختیار دیگران قرار ندهید.
+اگر این توکن به صورت تصادفی در اختیار دیگران قرار گرفت سریعاً به سایت بیت24 مراجعه کرده و از طریق صفحه مدیریت API توکن خود را پاک کنید و مجددا توکن جدیدی بسازید.
+‍
+
+برای دریافت توکن می‌توانید با مراجعه به پنل کاربری خود در بیت24 از بخش پروفایل وارد صفحه مدیریت API شده و توکن خود را دریافت نمایید.
+
+در این صفحه می توانید IP هایی که می توانند از این توکن استفاده کنند را مشخص کنید.
+
+PHP-EXAMPLE: $signature = hash_hmac('sha256', $prameters,$secret_key);
+در صورت عدم ارسال یا نادرست بودن مقدار signature، پاسخ به این صورت خواهد بود:
+
+{
+    "data": null,
+    "error": {
+        "errors": [
+            {
+                "reason": "signature",
+                "message": "امضا اشتباه است."
+            }
+        ],
+        "message": "خطا در اعتبار سنجی ورودی ها"
+    },
+    "status_code": 422,
+    "success": false
+}
+ کلید اختصاصی:
+هنگام دریافت کلید API، کلید دیگری به نام کلید اختصاصی نیز دریافت می کنید. این کلید زمانی که دیتاها از طریق body با متد POST ارسال می شوند استفاده می شود. پارامتر ها را با استفاده از کاراکتر & از هم جداکنید(a=1&b=2&c=3) سپس درون رشته ای ذخیره کنید و با استفاده از رشته و کلید اختصاصی، امضا بسازید و رشته را در قالب signature ارسال نمایید. توجه کنید حتما از الگوریتم sha256 استفاده شود و خروجی بصورت HEX باشد. هنگام ایجاد امضا، پارامتر ها را نسبت به حروف الفبا جایگزاری کنید، مثلا: در یک Api که نیاز به ارسال 3 پارامتر (condition_price,price,amount) در Body است، جهت ایجاد امضا، ابتدا پارامترها به ترتیب حروف الفبا و کاراکتر & را همانند مقدار زیر از هم جدا کنید (amount=1000&condition_price=3000&price=2500) سپس با کلید اختصاصی و با استفاده از الگوریتم sha256 درست کرده و ارسال کنید.
+راهنما شروع به کار با API
+اگر برای اولین بار از API بیت24 استفاده می‌کنید، برای شروع کار پیشنهاد می‌شود گام‌های زیر را طی کنید:
+
+برای شروع کار با API ابتدا در بیت24 ثبت‌نام نمایید و مراحل احراز هویت خود را تا سطح پیشرفته انجام دهید. با مراجعه به پنل کاربری خود در بیت24، از بخش پروفایل وارد صفحه مدیریت API شده و توکن خود را دریافت نمایید. دسترسی به این توکن به منزله دسترسی کامل به حساب شماست، در نتیجه در حفاظت آن دقت کامل داشته باشید. اگر با نرم‌افزار Postman آشنا هستید، می‌توانید برای تست فراخوانی APIهای اصلی بیت24، از کالکشن Postman بیت24 استفاده کنید. لازم به توضیح است که این کالکشن تنها شامل برخی از APIهای بیت24 و کاربرد آن‌ها است و مرجع اصلی مستندات، همین صفحه است.
+
+اطلاعات شبکه های قابل برداشت
+curl --location 'https://rest.bit24.cash/lite/capi/v1/withdraw/networks?symbol=TRX' \
+--header 'Accept: application/json' \
+--header 'Content-Type: application/x-www-form-urlencoded' \
+--header 'X-BIT24-APIKEY: *******DDF**78*************186' 
+در صورت فراخوانی درست، پاسخ به این صورت خواهد بود:
+
+{
+  "success": true,
+  "status_code": 200,
+  "data": {
+    "balance": "195.92430000",
+    "networks": [
+      {
+        "network_id": 486,
+        "network_name": "TRX",
+        "network_layer": "TRX",
+        "min_withdraw": "7",
+        "max_withdraw": null,
+        "fee": "2",
+        "address_regex": "^T[1-9A-HJ-NP-Za-km-z]{33}$",
+        "memo_regex": null
+      }
+    ],
+    "message": ""
+  },
+  "error": null
+}
+در صورت تناقض ورودی، پاسخ به این صورت خواهد بود:
+
+{
+  "success": false,
+  "status_code": 422,
+  "error": {
+    "message": "خطا در اعتبار سنجی ورودی ها",
+    "errors": [
+      {
+        "reason": "symbol",
+        "message": "symbol (نماد) الزامی است."
+      }
+    ]
+  },
+  "data": null
+}
+در صورت تناقض توکن، پاسخ به این صورت خواهد بود:
+
+{
+  "success": false,
+  "status_code": 401,
+  "error": {
+    "message": "عدم احراز.",
+    "errors": null
+  },
+  "data": null
+}
+در صورت فراخوانی نادرست آدرس، پاسخ به این صورت خواهد بود:
+
+{
+  "data": null,
+  "error": {
+    "message": "صفحه مورد نظر یافت نشد",
+    "errors": null
+  },
+  "status_code": 404,
+  "success": false
+}
+در صورت وجود خطا درون سرور، پاسخ به این صورت خواهد بود:
+
+{
+  "success": false,
+  "status_code": 500,
+  "error": {
+    "message": "خطایی در سرور رخ داده است.",
+    "errors": null
+  },
+  "data": null
+}
+برای دریافت اطلاعات شبکه های قابل برداشت از این درخواست استفاده نمایید:
+
+درخواست: GET /lite/capi/v1/withdraw/networks
+محدودیت فراخوانی: 250 درخواست در دقیقه
+نیاز به ارسال توکن: دارد
+نیاز به ارسال کلید اختصاصی : ندارد
+ برای دریافت اطلاعات شبکه های قابل برداشت حتماً از متد GET استفاده کنید.
+پارامترهای ورودی
+پارامتر	نوع	پیش‌فرض	توضیحات	نمونه
+symbol	string	الزامی	ارز	BTC
+پارامتر	توضیحات مقادیر
+symbol	نماد ارز دیجیتال برای دریافت اطلاعات شبکه های قابل برداشت
+پارامترهای پاسخ(data)
+پارامتر	نوع	توضیحات
+balance	string	موجودی
+networks	array	اطلاعات شبکه ها
+networks.network_id	numeric	شناسه شبکه
+networks.network_name	string	نام شبکه
+networks.network_layer	string	لایه شبکه
+networks.min_withdraw	string	حداقل مقدار برداشت
+networks.max_withdraw	string	حداکثر مقدار برداشت
+networks.fee	string	کمیسیون شبکه
+networks.address_regex	string	الگو صحیح آدرس شبکه
+networks.memo_regex	string	الگو ممو کیف پول
+برداشت
+curl --location 'https://rest.bit24.cash/lite/capi/v1/withdraw/submit' \
+--header 'Accept: application/json' \
+--header 'Content-Type: application/x-www-form-urlencoded' \
+--header 'X-BIT24-APIKEY: *******DDF**78*************186' \
+--data-urlencode 'symbol=TRX' \
+--data-urlencode 'network_id=486' \
+--data-urlencode 'address=TXQmDK38s5YHjJDF7xuGpJtGTH9WeDVpk5' \
+--data-urlencode 'value=50' \
+--data-urlencode 'signature=eb5c373bb3f28434006566efc98bcb7067e5027b21a67bb284e8067100e2db7b'
+در صورت فراخوانی درست، پاسخ به این صورت خواهد بود:
+
+{
+  "success": true,
+  "status_code": 200,
+  "data": {
+    "message": "درخواست برداشت شما با موفقیت ثبت شد."
+  },
+  "error": null
+}
+در صورت تناقض ورودی، پاسخ به این صورت خواهد بود:
+
+{
+  "success": false,
+  "status_code": 422,
+  "error": {
+    "message": "خطا در اعتبار سنجی ورودی ها",
+    "errors": [
+      {
+        "reason": "symbol",
+        "message": "symbol (نماد) الزامی است."
+      },
+      {
+        "reason": "network_id",
+        "message": "ارز/شبکه الزامی است."
+      },
+      {
+        "reason": "address",
+        "message": "آدرس الزامی است."
+      },
+      {
+        "reason": "value",
+        "message": "مقدار الزامی است."
+      }
+    ]
+  },
+  "data": null
+}
+در صورت تناقض توکن، پاسخ به این صورت خواهد بود:
+
+{
+  "success": false,
+  "status_code": 401,
+  "error": {
+    "message": "عدم احراز.",
+    "errors": null
+  },
+  "data": null
+}
+در صورت فراخوانی نادرست آدرس، پاسخ به این صورت خواهد بود:
+
+{
+  "data": null,
+  "error": {
+    "message": "صفحه مورد نظر یافت نشد",
+    "errors": null
+  },
+  "status_code": 404,
+  "success": false
+}
+در صورت وجود خطا درون سرور، پاسخ به این صورت خواهد بود:
+
+{
+  "success": false,
+  "status_code": 500,
+  "error": {
+    "message": "خطای برنامه نویسی: در قسمتی از برنامه خطای ناشناخته ای وجود دارد",
+    "errors": null
+  },
+  "data": null
+}
+برای ثبت برداشت از این درخواست استفاده نمایید:
+
+درخواست: POST /lite/capi/v1/withdraw/submit
+محدودیت فراخوانی: 250 درخواست در دقیقه
+نیاز به ارسال توکن: دارد
+نیاز به ارسال کلید اختصاصی : دارد
+ برای برداشت حتماً از متد POST استفاده کنید.
+پارامترهای ورودی
+پارامتر	نوع	پیش‌فرض	توضیحات	نمونه
+symbol	string	الزامی	ارز	TRX
+network_id	numeric	الزامی	شناسه شبکه	486
+address	string	الزامی	آدرس کیف پول	TXQmDK38s5YHjJDF7xuGpJtGTH9WeDVpk5
+memo	string	اختیاری	ممو کیف پول	123456
+value	numeric	الزامی	مقدار برداشت	1000
+signature	string	الزامی	امضا	48187874b431653147d59717150da82b6560fa3dee739fdb
+پارامتر	توضیحات مقادیر
+memo	در بعضی از شبکه های کیف پول ممو مورد نیاز است.
+پارامترهای پاسخ(data)
+پارامتر	نوع	توضیحات
+message	string	پیام
+اطلاعات شبکه های قابل واریز
+curl --location 'https://rest.bit24.cash/lite/capi/v1/deposit/networks?symbol=TRX' \
+--header 'Accept: application/json' \
+--header 'Content-Type: application/x-www-form-urlencoded' \
+--header 'X-BIT24-APIKEY: *******DDF**78*************186' 
+در صورت فراخوانی درست، پاسخ به این صورت خواهد بود:
+
+{
+  "success": true,
+  "status_code": 200,
+  "data": {
+    "networks": [
+      {
+        "network_name": "TRX",
+        "network_layer": "TRX",
+        "description_deposit": "کاربران گرامی به هیچ وجه از سایت www.8trx8.com به بیت24 مستقیم ارز انتقال ندهید. ابتدا به والت شخصی مثل Trust منتقل سپس به بیت 24 ارسال کنید.در صورت عدم توجه و مشکل، بیت24 مسئولیتی نمیپذیرد",
+        "min_deposit": "10",
+        "address": "TAxFTcVThKKg9sMH2JSGacFHLVE6vkK9bV",
+        "memo": null
+      }
+    ],
+    "message": ""
+  },
+  "error": null
+}
+در صورت تناقض ورودی، پاسخ به این صورت خواهد بود:
+
+{
+  "success": false,
+  "status_code": 422,
+  "error": {
+    "message": "خطا در اعتبار سنجی ورودی ها",
+    "errors": [
+      {
+        "reason": "symbol",
+        "message": "symbol (نماد) الزامی است."
+      }
+    ]
+  },
+  "data": null
+}
+در صورت تناقض توکن، پاسخ به این صورت خواهد بود:
+
+{
+  "data": null,
+  "success": false,
+  "status_code": 401,
+  "error": {
+    "message": "عدم احراز.",
+    "errors": null
+  }
+}
+در صورت فراخوانی نادرست آدرس، پاسخ به این صورت خواهد بود:
+
+{
+  "data": null,
+  "error": {
+    "message": "صفحه مورد نظر یافت نشد",
+    "errors": null
+  },
+  "status_code": 404,
+  "success": false
+}
+در صورت وجود خطا درون سرور، پاسخ به این صورت خواهد بود:
+
+{
+  "success": false,
+  "status_code": 500,
+  "error": {
+    "message": "خطایی در سرور رخ داده است.",
+    "errors": null
+  }
+}
+برای دریافت اطلاعات شبکه های قابل واریز از این درخواست استفاده نمایید:
+
+درخواست: GET /lite/capi/v1/deposit/networks
+محدودیت فراخوانی: 250 درخواست در دقیقه
+نیاز به ارسال توکن: دارد
+نیاز به ارسال کلید اختصاصی : ندارد
+ برای دریافت اطلاعات شبکه های قابل واریز حتماً از متد GET استفاده کنید.
+پارامترهای ورودی
+پارامتر	نوع	پیش‌فرض	توضیحات	نمونه
+symbol	string	الزامی	ارز	TRX
+پارامتر	توضیحات مقادیر
+symbol	نماد ارز دیجیتال برای دریافت اطلاعات شبکه های قابل واریز
+پارامترهای پاسخ(data)
+پارامتر	نوع	توضیحات
+network_name	string	نام شبکه
+network_layer	string	لایه شبکه
+description_deposit	string	توضیحات واریز
+min_deposit	string	حداقل مقدار واریز
+address	string	آدرس کیف پول
+memo	string	ممو کیف پول
+اطلاعات دارایی
+curl --location 'https://rest.bit24.cash/asset/capi/v1/wallet/assets?name=DOGE&without_zero=0&without_irt=1&alphabet=d&page=1' \
+--header 'Accept: application/json' \
+--header 'X-BIT24-APIKEY: *******DDF**78*************186'
+در صورت فراخوانی درست، پاسخ به این صورت خواهد بود:
+
+{
+  "success": true,
+  "status_code": 200,
+  "error": null,
+  "data": {
+    "message": "",
+    "asset": [
+      {
+        "id": 11,
+        "name": "Tron",
+        "fa_name": "ترون",
+        "symbol": "TRX",
+        "coin_type": 0,
+        "web_icon": "https://storage.bit24.exchange/exchange-stage/icons/b79477c5-e085-4a7b-a2b3-ea00ba539bdd.png",
+        "app_icon": "https://storage.bit24.exchange/exchange-stage/icons/b79477c5-e085-4a7b-a2b3-ea00ba539bdd.png",
+        "each_price": "0.1514000000000000",
+        "change_24hr": "1.06",
+        "balance": "100000200.00000000",
+        "available_balance": "100000200.00000000",
+        "in_orders": "0.00000000",
+        "balance_irt": "781982563962",
+        "balance_usdt": "15140030.28",
+        "markets": [
+          {
+            "base_coin_symbol": "TRX",
+            "quote_coin_symbol": "IRT",
+            "is_active": 1
+          },
+          {
+            "base_coin_symbol": "TRX",
+            "quote_coin_symbol": "USDT",
+            "is_active": 1
+          }
+        ]
+      },
+      {
+        "id": 20,
+        "name": "Dogecoin",
+        "fa_name": "دوج کوین",
+        "symbol": "DOGE",
+        "coin_type": 0,
+        "web_icon": "https://storage.bit24.exchange/exchange-stage/icons/c9718cb5-4651-45a1-850a-91000fc82b25.png",
+        "app_icon": "https://storage.bit24.exchange/exchange-stage/icons/c9718cb5-4651-45a1-850a-91000fc82b25.png",
+        "each_price": "0.0958000000000000",
+        "change_24hr": "1.57",
+        "balance": "100000110.00000000",
+        "available_balance": "100000010.00000000",
+        "in_orders": "0.00000000",
+        "balance_irt": "494807544287",
+        "balance_usdt": "9580010.53",
+        "markets": [
+          {
+            "base_coin_symbol": "DOGE",
+            "quote_coin_symbol": "IRT",
+            "is_active": 1
+          },
+          {
+            "base_coin_symbol": "DOGE",
+            "quote_coin_symbol": "USDT",
+            "is_active": 1
+          }
+        ]
+      }
+    ]
+  }
+}
+در صورت تناقض توکن، پاسخ به این صورت خواهد بود:
+
+{
+  "data": null,
+  "error": {
+    "message": "عدم احراز",
+    "errors": null
+  },
+  "status_code": 401,
+  "success": false
+}
+در صورت فراخوانی نادرست آدرس، پاسخ به این صورت خواهد بود:
+
+{
+  "data": null,
+  "error": {
+    "message": "صفحه مورد نظر یافت نشد",
+    "errors": null
+  },
+  "status_code": 404,
+  "success": false
+}
+در صورت وجود خطا درون سرور، پاسخ به این صورت خواهد بود:
+
+{
+  "data": null,
+  "error": {
+    "message": "خطایی در سرور رخ داده است.",
+    "errors": null
+  },
+  "status_code": 500,
+  "success": false
+}
+برای دریافت لیست اطلاعات دارایی رمز ارز ها از این درخواست استفاده نمایید:
+
+درخواست: GET /asset/capi/v1/wallet/assets
+محدودیت فراخوانی: 250 درخواست در دقیقه
+نیاز به ارسال توکن: دارد
+نیاز به ارسال کلید اختصاصی : ندارد
+ برای دریافت دارایی حتماً از متد GET استفاده کنید.
+پارامترهای ورودی
+پارامتر	نوع	پیش‌فرض	توضیحات	نمونه
+name	string	اختیاری	ارز پایه	BTC
+alphabet	string	اختیاری	ارز متقابل	e(ارز هایی که شروع کلماتشان با کاراکتر مورد نظر است)
+without_irt	string	اختیاری	جهت سفارش	0
+without_zero	string	اختیاری	نوع سفارش	1
+پارامتر	توضیحات مقادیر
+without_irt	0 = همه ارز ها, 1 = همه ارز ها - ارز تومان
+without_zero	0 = همه ارز ها , 1 = ارز هایی که مقدار داراییشان بیشتر از 0 است
+پارامترهای پاسخ(data)
+پارامتر	نوع	توضیحات
+id	numeric	شناسه ارز
+name	string	نام ارز
+fa_name	string	نام فارسی ارز
+symbol	string	نماد ارز
+coin_type	numeric	نوع ارز (0 = ارز دیجیتال , 1 =ارز نقدی)
+web_icon	string	آیکون ارز در وبسایت
+app_icon	string	آیکون ارز در موبایل
+each_price	string	قیمت ارز
+change_24hr	string	درصد تغییر 24 ساعت اخیر
+balance	string	مقدار دارایی
+available_balance	string	مقدار در دسترس دارایی
+in_orders	string	مقدار قفل شده دارای در سفارشات
+balance_irt	string	ارزش ریالی دارایی در دسترسی ارز
+balance_usdt	string	ارزش تتری دارایی در دسترسی ارز
+markets	array	بازار های موجود بر اساس ارز
+markets.base_coin_symbol	string	ارز پایه
+markets.base_coin_symbol	string	ارز متقابل
+markets.is_active	numeric	وضعیت بازار(1 = فعال , 0 = غیر فعال)
+اطلاعات مجموع دارایی
+curl --location 'https://rest.bit24.cash/asset/capi/v1/wallet/assets/total' \
+--header 'Accept: application/json' \
+--header 'X-BIT24-APIKEY: *******DDF**78*************186'
+در صورت فراخوانی درست، پاسخ به این صورت خواهد بود:
+
+{
+  "success": true,
+  "status_code": 200,
+  "error": null,
+  "data": {
+    "message": "",
+    "assets": {
+      "total_assets": {
+        "total_assets_in_usdt": "19364345.594906356889",
+        "available_assets_in_usdt": "19338822.379100367286",
+        "total_assets_in_irt": "1007914188214.893036410275",
+        "available_assets_in_irt": "1006585704832.188171322725"
+      },
+      "user": {
+        "total_assets_in_usdt": "19240378.885436499578",
+        "available_assets_in_usdt": "19236355.145948448629",
+        "total_assets_in_irt": "1001461720986.971502566289",
+        "available_assets_in_irt": "1001252285346.618265226239"
+      },
+      "bot": {
+        "total_assets_in_usdt": "123966.709469857311",
+        "available_assets_in_usdt": "102467.233151918657",
+        "total_assets_in_irt": "6452467227.921533843986",
+        "available_assets_in_irt": "5333419485.569906096486"
+      },
+      "margin": {
+        "total_assets_in_usdt": "0",
+        "available_assets_in_usdt": "0",
+        "total_assets_in_irt": "0",
+        "available_assets_in_irt": "0"
+      },
+      "investment": {
+        "total_assets_in_usdt": "0",
+        "available_assets_in_usdt": "0",
+        "total_assets_in_irt": "0",
+        "available_assets_in_irt": "0"
+      }
+    }
+  }
+}
+در صورت تناقض توکن، پاسخ به این صورت خواهد بود:
+
+{
+  "data": null,
+  "error": {
+    "message": "عدم احراز",
+    "errors": null
+  },
+  "status_code": 401,
+  "success": false
+}
+در صورت فراخوانی نادرست آدرس، پاسخ به این صورت خواهد بود:
+
+{
+  "error": {
+    "message": "صفحه مورد نظر یافت نشد",
+    "errors": null
+  },
+  "status_code": 404,
+  "success": false,
+  "data": null
+}
+در صورت وجود خطا درون سرور، پاسخ به این صورت خواهد بود:
+
+{
+  "error": {
+    "message": "خطایی در سرور رخ داده است.",
+    "errors": null
+  },
+  "status_code": 500,
+  "success": false,
+  "data": null
+}
+برای دریافت اطلاعات مجموع دارایی از این نوع درخواست استفاده نمایید:
+
+درخواست: GET /asset/capi/v1/wallet/assets/total
+محدودیت فراخوانی: 250 درخواست در دقیقه
+نیاز به ارسال توکن: دارد
+نیاز به ارسال کلید اختصاصی : ندارد
+ برای دریافت لیست دارایی ها حتماً از متد GET استفاده نمایید.
+پارامترهای پاسخ(data)
+پارامتر	نوع	توضیحات
+assets	Object	اطلاعات مربوط به دارایی‌ها
+assets.total_assets	Object	اطلاعات دارایی کل
+assets.total_assets_in_usdt	String	مقدار کل دارایی‌های کاربر به تتر
+assets.available_assets_in_usdt	String	مقدار کل دارایی‌های دردسترس کاربر به تتر
+assets.total_assets_in_irt	String	مقدار کل دارایی‌های کاربر به تومان
+assets.available_assets_in_irt	String	مقدار کل دارایی‌های دردسترس کاربر به تومان
+assets.user	Object	اطلاعات دارایی‌های کاربر در والت اصلی
+assets.user.total_assets_in_usdt	String	مقدار کل دارایی‌های کاربر در والت اصلی به تتر
+assets.user.available_assets_in_usdt	String	مقدار کل دارایی‌های دردسترس کاربر در والت اصلی به تتر
+assets.user.total_assets_in_irt	String	مقدار کل دارایی‌های کاربر در والت اصلی به تومان
+assets.user.available_assets_in_irt	String	مقدار کل دارایی‌های دردسترس کاربر در والت اصلی به تومان
+assets.bot	Object	اطلاعات دارایی‌های کاربر در والت ربات
+assets.bot.total_assets_in_usdt	String	مقدار کل دارایی‌های کاربر در والت ربات به تتر
+assets.bot.available_assets_in_usdt	String	مقدار کل دارایی‌های دردسترس کاربر در والت ربات به تتر
+assets.bot.total_assets_in_irt	String	مقدار کل دارایی‌های کاربر در والت ربات به تومان
+assets.bot.available_assets_in_irt	String	مقدار کل دارایی‌های دردسترس کاربر در والت ربات به تومان
+assets.margin	Object	اطلاعات دارایی‌های والت مارجین کاربر
+assets.margin.total_assets_in_usdt	String	مقدار کل دارایی‌های والت مارجین کاربر به تتر
+assets.margin.available_assets_in_usdt	String	مقدار کل دارایی‌های دردسترس والت مارجین کاربر به تتر
+assets.margin.total_assets_in_irt	String	مقدار کل دارایی‌های والت مارجین کاربر به تومان
+assets.margin.available_assets_in_irt	String	مقدار کل دارایی‌های دردسترس والت مارجین کاربر به تومان
+assets.investment	Object	اطلاعات دارایی‌های والت سرمایه‌گذاری کاربر
+assets.investment.total_assets_in_usdt	String	مقدار کل دارایی‌های والت سرمایه‌گذاری کاربر به تتر
+assets.investment.available_assets_in_usdt	String	مقدار کل دارایی‌های دردسترس والت سرمایه‌گذاری کاربر به تتر
+assets.investment.total_assets_in_irt	String	مقدار کل دارایی‌های والت سرمایه‌گذاری کاربر به تومان
+assets.investment.available_assets_in_irt	String	مقدار کل دارایی‌های دردسترس والت سرمایه‌گذاری کاربر به تومان
+تاریخچه کیف پول
+curl --location 'https://rest.bit24.cash/asset/capi/v1/wallet/assets/history?type=0&reason_type=0&balance_status=0&from=2023-01-12&to=2023-12-12&coin_type=0&symbol=btc' \
+--header 'Accept: application/json' \
+--header 'X-BIT24-APIKEY: *******DDF**78*************186'
+در صورت فراخوانی درست، پاسخ به این صورت خواهد بود:
+
+{
+  "success": true,
+  "status_code": 200,
+  "error": null,
+  "data": {
+    "message": "",
+    "has_paginate": 1,
+    "total_data": 170,
+    "current_page": 1,
+    "from": 1,
+    "to": 40,
+    "last_page": 5,
+    "per_page": 40,
+    "results": [
+      {
+        "id": 238297,
+        "name": "Dogecoin",
+        "fa_name": "دوج کوین",
+        "symbol": "DOGE",
+        "logo": "https://storage.bit24.exchange/exchange-stage/icons/c9718cb5-4651-45a1-850a-91000fc82b25.png",
+        "value": "1000.00000000",
+        "done_value": "1000.00000000",
+        "type": 1,
+        "transaction_code": "qY66eaa3edb17e1Gn",
+        "type_text": "افزایشی",
+        "reason_type": "7",
+        "reason_text": null,
+        "reason_type_text": "بخش پشتیبانی",
+        "reason_id": 1300200,
+        "balance_status": 1,
+        "balance_status_text": "موفق",
+        "commission": 0,
+        "final_commission": "0",
+        "created_at": "2024-09-18 13:27:01",
+        "created_at_jalali": "1403/6/28 - 13:27:01",
+        "updated_at": "2024-09-18 13:27:01",
+        "updated_at_jalali": "1403/6/28 - 13:27:01"
+      },
+      {
+        "id": 238294,
+        "name": "Dogecoin",
+        "fa_name": "دوج کوین",
+        "symbol": "DOGE",
+        "logo": "https://storage.bit24.exchange/exchange-stage/icons/c9718cb5-4651-45a1-850a-91000fc82b25.png",
+        "value": "1000.00000000",
+        "done_value": "1000.00000000",
+        "type": 1,
+        "transaction_code": "lO66ea9faf525001J",
+        "type_text": "افزایشی",
+        "reason_type": "7",
+        "reason_text": null,
+        "reason_type_text": "بخش پشتیبانی",
+        "reason_id": 1300200,
+        "balance_status": 1,
+        "balance_status_text": "موفق",
+        "commission": 0,
+        "final_commission": "0",
+        "created_at": "2024-09-18 13:08:55",
+        "created_at_jalali": "1403/6/28 - 13:08:55",
+        "updated_at": "2024-09-18 13:08:55",
+        "updated_at_jalali": "1403/6/28 - 13:08:55"
+      },
+      {
+        "id": 238289,
+        "name": "Dogecoin",
+        "fa_name": "دوج کوین",
+        "symbol": "DOGE",
+        "logo": "https://storage.bit24.exchange/exchange-stage/icons/c9718cb5-4651-45a1-850a-91000fc82b25.png",
+        "value": "1000.00000000",
+        "done_value": "1000.00000000",
+        "type": 1,
+        "transaction_code": "hK66ea9d162e909TD",
+        "type_text": "افزایشی",
+        "reason_type": "7",
+        "reason_text": null,
+        "reason_type_text": "بخش پشتیبانی",
+        "reason_id": 1300200,
+        "balance_status": 1,
+        "balance_status_text": "موفق",
+        "commission": 0,
+        "final_commission": "0",
+        "created_at": "2024-09-18 12:57:50",
+        "created_at_jalali": "1403/6/28 - 12:57:50",
+        "updated_at": "2024-09-18 12:57:50",
+        "updated_at_jalali": "1403/6/28 - 12:57:50"
+      },
+      {
+        "id": 238288,
+        "name": "Dogecoin",
+        "fa_name": "دوج کوین",
+        "symbol": "DOGE",
+        "logo": "https://storage.bit24.exchange/exchange-stage/icons/c9718cb5-4651-45a1-850a-91000fc82b25.png",
+        "value": "1000.00000000",
+        "done_value": "1000.00000000",
+        "type": 1,
+        "transaction_code": "is66ea9c969fd70YJ",
+        "type_text": "افزایشی",
+        "reason_type": "7",
+        "reason_text": null,
+        "reason_type_text": "بخش پشتیبانی",
+        "reason_id": 1300200,
+        "balance_status": 1,
+        "balance_status_text": "موفق",
+        "commission": 0,
+        "final_commission": "0",
+        "created_at": "2024-09-18 12:55:42",
+        "created_at_jalali": "1403/6/28 - 12:55:42",
+        "updated_at": "2024-09-18 12:55:42",
+        "updated_at_jalali": "1403/6/28 - 12:55:42"
+      },
+      {
+        "id": 238287,
+        "name": "Dogecoin",
+        "fa_name": "دوج کوین",
+        "symbol": "DOGE",
+        "logo": "https://storage.bit24.exchange/exchange-stage/icons/c9718cb5-4651-45a1-850a-91000fc82b25.png",
+        "value": "1000.00000000",
+        "done_value": "1000.00000000",
+        "type": 1,
+        "transaction_code": "7v66ea99e098402oz",
+        "type_text": "افزایشی",
+        "reason_type": "7",
+        "reason_text": null,
+        "reason_type_text": "بخش پشتیبانی",
+        "reason_id": 1300200,
+        "balance_status": 1,
+        "balance_status_text": "موفق",
+        "commission": 0,
+        "final_commission": "0",
+        "created_at": "2024-09-18 12:44:08",
+        "created_at_jalali": "1403/6/28 - 12:44:08",
+        "updated_at": "2024-09-18 12:44:08",
+        "updated_at_jalali": "1403/6/28 - 12:44:08"
+      },
+      {
+        "id": 238285,
+        "name": "Dogecoin",
+        "fa_name": "دوج کوین",
+        "symbol": "DOGE",
+        "logo": "https://storage.bit24.exchange/exchange-stage/icons/c9718cb5-4651-45a1-850a-91000fc82b25.png",
+        "value": "1000.00000000",
+        "done_value": "1000.00000000",
+        "type": 1,
+        "transaction_code": "Gl66ea906cae2f967",
+        "type_text": "افزایشی",
+        "reason_type": "7",
+        "reason_text": null,
+        "reason_type_text": "بخش پشتیبانی",
+        "reason_id": 1300200,
+        "balance_status": 1,
+        "balance_status_text": "موفق",
+        "commission": 0,
+        "final_commission": "0",
+        "created_at": "2024-09-18 12:03:48",
+        "created_at_jalali": "1403/6/28 - 12:03:48",
+        "updated_at": "2024-09-18 12:03:48",
+        "updated_at_jalali": "1403/6/28 - 12:03:48"
+      },
+      {
+        "id": 238278,
+        "name": "Dogecoin",
+        "fa_name": "دوج کوین",
+        "symbol": "DOGE",
+        "logo": "https://storage.bit24.exchange/exchange-stage/icons/c9718cb5-4651-45a1-850a-91000fc82b25.png",
+        "value": "1000.00000000",
+        "done_value": "1000.00000000",
+        "type": 1,
+        "transaction_code": "PI66ea74d98fb82OZ",
+        "type_text": "افزایشی",
+        "reason_type": "7",
+        "reason_text": null,
+        "reason_type_text": "بخش پشتیبانی",
+        "reason_id": 1300200,
+        "balance_status": 1,
+        "balance_status_text": "موفق",
+        "commission": 0,
+        "final_commission": "0",
+        "created_at": "2024-09-18 10:06:09",
+        "created_at_jalali": "1403/6/28 - 10:06:09",
+        "updated_at": "2024-09-18 10:06:09",
+        "updated_at_jalali": "1403/6/28 - 10:06:09"
+      },
+      {
+        "id": 237678,
+        "name": "Toman",
+        "fa_name": "تومان",
+        "symbol": "IRT",
+        "logo": "https://storage.bit24.exchange/exchange-stage/icons/irt1.png",
+        "value": "25050027.34658800",
+        "done_value": "25050027.34658800",
+        "type": 1,
+        "transaction_code": "qg66e01a978ac72Hj",
+        "type_text": "افزایشی",
+        "reason_type": "2",
+        "reason_text": null,
+        "reason_type_text": "معامله حرفه\u200cای",
+        "reason_id": 35306454,
+        "balance_status": 1,
+        "balance_status_text": "موفق",
+        "commission": 0,
+        "final_commission": "0",
+        "created_at": "2024-09-10 13:38:21",
+        "created_at_jalali": "1403/6/20 - 13:38:21",
+        "updated_at": "2024-09-10 13:38:29",
+        "updated_at_jalali": "1403/6/20 - 13:38:29"
+      },
+      {
+        "id": 237676,
+        "name": "Tether",
+        "fa_name": "تتر",
+        "symbol": "USDT",
+        "logo": "https://storage.bit24.exchange/exchange-stage/icons/596ac4ed-3c63-45cf-9f30-c28646ec0532.png",
+        "value": "485.48000000",
+        "done_value": "485.48000000",
+        "type": 0,
+        "transaction_code": "kR66e01a91bba35W6",
+        "type_text": "کاهشی",
+        "reason_type": "2",
+        "reason_text": "",
+        "reason_type_text": "معامله حرفه\u200cای",
+        "reason_id": 35306454,
+        "balance_status": 1,
+        "balance_status_text": "موفق",
+        "commission": 0,
+        "final_commission": "0",
+        "created_at": "2024-09-10 13:38:17",
+        "created_at_jalali": "1403/6/20 - 13:38:17",
+        "updated_at": "2024-09-10 13:38:17",
+        "updated_at_jalali": "1403/6/20 - 13:38:17"
+      },
+      {
+        "id": 237675,
+        "name": "Toman",
+        "fa_name": "تومان",
+        "symbol": "IRT",
+        "logo": "https://storage.bit24.exchange/exchange-stage/icons/irt1.png",
+        "value": "11805807.36205600",
+        "done_value": "11805807.36205600",
+        "type": 1,
+        "transaction_code": "LU66e01a557a856Zx",
+        "type_text": "افزایشی",
+        "reason_type": "2",
+        "reason_text": null,
+        "reason_type_text": "معامله حرفه\u200cای",
+        "reason_id": 35306403,
+        "balance_status": 1,
+        "balance_status_text": "موفق",
+        "commission": 0,
+        "final_commission": "0",
+        "created_at": "2024-09-10 13:37:15",
+        "created_at_jalali": "1403/6/20 - 13:37:15",
+        "updated_at": "2024-09-10 13:37:17",
+        "updated_at_jalali": "1403/6/20 - 13:37:17"
+      }
+    ]
+  }
+}
+در صورت تناقض توکن، پاسخ به این صورت خواهد بود:
+
+{
+  "data": null,
+  "error": {
+    "message": "عدم احراز",
+    "errors": null
+  },
+  "status_code": 401,
+  "success": false
+}
+در صورت فراخوانی نادرست آدرس، پاسخ به این صورت خواهد بود:
+
+{
+  "data": null,
+  "error": {
+    "message": "صفحه مورد نظر یافت نشد",
+    "errors": null
+  },
+  "status_code": 404,
+  "success": false
+}
+در صورت وجود خطا درون سرور، پاسخ به این صورت خواهد بود:
+
+{
+  "data": null,
+  "error": {
+    "message": "خطایی در سرور رخ داده است.",
+    "errors": null
+  },
+  "status_code": 500,
+  "success": false
+}
+برای دریافت لیست تاریخچه کیف پول خود، از این درخواست استفاده نمایید:
+
+درخواست: GET /asset/capi/v1/wallet/assets/history
+محدودیت فراخوانی: 250 درخواست در دقیقه
+نیاز به ارسال توکن: دارد
+نیاز به ارسال کلید اختصاصی : ندارد
+ برای دریافت دارایی حتماً از متد GET استفاده کنید.
+پارامترهای ورودی
+پارامتر	نوع	پیش‌فرض	توضیحات	نمونه
+type	string	اختیاری	جهت تراکنش	1
+symbol	string	اختیاری	نماد رمز ارز	BTC
+coin_type	string	اختیاری	نوع رمز ارز	0
+reason_type	string	اختیاری	نوع تراکنش	0
+balance_status	string	اختیاری	وضعیت تراکنش	0
+from	dateTime	اختیاری	از تاریخ	2022-02-20
+to	dateTime	اختیاری	تا تاریخ	2023-03-21
+پارامتر	توضیحات مقادیر
+type	0 = کاهشی , 1 = افزایشی
+coin_type	0 = رمز ارز دیجیتالی , 1 =ارز بانکی
+reason_type	0 = واریز , 1 = برداشت , 2 = معامله حرفه ای , 3 = کمیسیون معرف معامله حرفه ای , 6 = معامله آنی , 7 = بخش پشتیبانی , 8 = واریز با شناسه پرداخت , 9 = کد هدیه , 10 = کمیسیون معرف معامله آنی , 11 = کمیسیون معرف , 12 = معامله دارایی خرد
+balance_status	0 = در حال انجام , 1 = تکمیل شده
+پارامترهای پاسخ(data)
+پارامتر	نوع	توضیحات
+has_paginate	numeric	مشخص کننده اینکه این پاسخ به صورت pagination ارسال شده است.
+total_data	numeric	تعداد کلی اطلاعات
+current_page	numeric	مشخص کننده صفه کنونی
+from	numeric	آیتم اول صفحه کنونی
+to	numeric	آیتم آخر صفحه کنونی
+per_page	numeric	تعداد آیتم های هر صفحه
+results	array	لیست دارایی‌ها
+result.id	numeric	شناسه تراکنش
+result.name	string	نام ارز
+result.fa_name	string	نام فارسی ارز
+result.symbol	string	نماد ارز
+result.logo	string	لینک تصویر ارز
+result.value	string	مقدار تراکنش
+result.done_value	string	مقدار تکمیل شده از تراکنش
+result.type	numeric	جهت تراکنش(0 = کاهشی , 1 = افزایشی)
+result.transaction_code	string	کد رهگیری تراکنش
+result.type_text	string	متن جهت تراکنش
+result.reason_type	string	نوع تراکنش
+result.reason_text	string	توضیحات
+result.reason_type_text	string	متن نوع تراکنش
+result.reason_id	numeric	شناسه نوع تراکنش
+result.balance_status	numeric	وضعیت تراکنش
+result.balance_status_text	string	متن وضعیت تراکنش
+result.commission	numeric	کمیسیون
+result.final_commission	string	کمیسیون نهائی
+result.created_at	dateTime	تاریخ ایجاد
+result.created_at_jalali	dateTime	تاریخ شمسی ایجاد
+لیست سفارشات
+curl --location 'https://rest.bit24.cash/pro/capi/v2/spot-orders?side=1&page=1&per_page=40' \
+--header 'Accept: application/json' \
+--header 'X-BIT24-APIKEY: *******DDF**78*************186'
+در صورت فراخوانی درست، پاسخ به این صورت خواهد بود:
+
+{
+  "success": true,
+  "status_code": 200,
+  "error": null,
+  "data": {
+    "message": "",
+    "has_paginate": 1,
+    "total_data": 46,
+    "current_page": 1,
+    "from": 1,
+    "to": 40,
+    "last_page": 2,
+    "per_page": 40,
+    "results": [
+      {
+        "id": 67749861,
+        "market": "DOGE/IRT",
+        "base_coin": {
+          "symbol": "DOGE",
+          "name": "Dogecoin",
+          "fa_name": "دوج کوین",
+          "logo": "https://exchange-storage.bit24app.com/exchange-stage/icons/c9718cb5-4651-45a1-850a-91000fc82b25.png",
+          "coin_type": 0
+        },
+        "quote_coin": {
+          "symbol": "IRT",
+          "name": "Toman",
+          "fa_name": "تومان",
+          "logo": "https://exchange-storage.bit24app.com/exchange-stage/icons/irt1.png",
+          "coin_type": 1
+        },
+        "side": {
+          "index": 1,
+          "name": "خرید"
+        },
+        "type": {
+          "index": 0,
+          "name": "با تعیین قیمت"
+        },
+        "maker": true,
+        "status": {
+          "index": 2,
+          "filter_index": 2,
+          "filter_name": "لغو شده"
+        },
+        "fill_price": null,
+        "price": "7200",
+        "value": "100",
+        "value_coin_symbol": "DOGE",
+        "filled_percent": "0",
+        "filled_value": "0",
+        "total": "720000",
+        "total_coin_symbol": "IRT",
+        "total_commission": "0",
+        "condition": "-",
+        "trailing_price_condition": "",
+        "activation_price_condition": "",
+        "delta": "% ",
+        "triggered_category_type": null,
+        "created_at": 1779540870,
+        "updated_at": 1779542131
+      },
+      {
+        "id": 67741399,
+        "market": "USDT/IRT",
+        "base_coin": {
+          "symbol": "USDT",
+          "name": "Tether",
+          "fa_name": "تتر",
+          "logo": "https://exchange-storage.bit24app.com/exchange-stage/icons/596ac4ed-3c63-45cf-9f30-c28646ec0532.png",
+          "coin_type": 0
+        },
+        "quote_coin": {
+          "symbol": "IRT",
+          "name": "Toman",
+          "fa_name": "تومان",
+          "logo": "https://exchange-storage.bit24app.com/exchange-stage/icons/irt1.png",
+          "coin_type": 1
+        },
+        "side": {
+          "index": 1,
+          "name": "خرید"
+        },
+        "type": {
+          "index": 4,
+          "name": "حد ضرر با قیمت بازار"
+        },
+        "maker": false,
+        "status": {
+          "index": 3,
+          "filter_index": 3,
+          "filter_name": "تکمیل شده جزئی"
+        },
+        "fill_price": "178184",
+        "price": "بهترین قیمت بازار",
+        "value": "-",
+        "value_coin_symbol": "USDT",
+        "filled_percent": "17.43",
+        "filled_value": "4.891",
+        "total": "5000000",
+        "total_coin_symbol": "IRT",
+        "total_commission": "610.0510304",
+        "condition": ">=178,000",
+        "trailing_price_condition": "",
+        "activation_price_condition": "",
+        "delta": "% ",
+        "triggered_category_type": null,
+        "created_at": 1779534004,
+        "updated_at": 1779540359
+      },
+      "..."
+    ]
+  }
+}
+در صورت تناقض توکن، پاسخ به این صورت خواهد بود:
+
+{
+  "success": false,
+  "status_code": 401,
+  "error": {
+    "message": "عدم احراز",
+    "errors": null
+  },
+  "data": null
+}
+در صورت فراخوانی نادرست آدرس، پاسخ به این صورت خواهد بود:
+
+{
+  "success": false,
+  "status_code": 404,
+  "error": {
+    "message": "صفحه مورد نظر یافت نشد",
+    "errors": null
+  },
+  "data": null
+}
+در صورت وجود خطا درون سرور، پاسخ به این صورت خواهد بود:
+
+{
+  "success": false,
+  "status_code": 500,
+  "error": {
+    "message": "خطایی در سرور رخ داده است.",
+    "errors": null
+  },
+  "data": null
+}
+برای لیست سفارشات از این درخواست استفاده نمایید:
+
+درخواست: GET /pro/capi/v2/spot-orders
+محدودیت فراخوانی: 250 درخواست در دقیقه
+نیاز به ارسال توکن: دارد
+نیاز به ارسال کلید اختصاصی : ندارد
+پارامترهای ورودی
+پارامتر	نوع	پیش‌فرض	توضیحات	نمونه
+symbol	string	اختیاری	نماد بازار به فرمت Base-Quote، مثال: USDT-IRT	USDT-IRT
+status	integer	اختیاری	وضعیت سفارش	0
+side	integer	اختیاری	سمت سفارش	1
+type	integer	اختیاری	نوع سفارش	0
+from	integer	اختیاری	زمان شروع بازه (Unix Timestamp)	1780298001
+to	integer	اختیاری	زمان پایان بازه (Unix Timestamp)	1780298008
+page	integer	اختیاری	شماره صفحه. پیش‌فرض: 1	1
+per_page	integer	اختیاری	تعداد آیتم در هر صفحه. پیش‌فرض: 40، حداکثر: 100	40
+پارامتر	توضیحات مقادیر
+status	0: در حال انجام، 1: تکمیل شده، 2: لغو شده، 3: تکمیل جزئی
+side	0: فروش، 1: خرید
+type	0: Limit، 1: Market، 2: Stop Limit، 3: OCO، 4: Stop Market، 5: Trailing Stop
+پارامترهای پاسخ(data)
+پارامتر	نوع	توضیحات
+message	string	پیام پاسخ
+has_paginate	integer	مشخص می‌کند پاسخ دارای صفحه‌بندی است
+total_data	integer	تعداد کل سفارشات
+current_page	integer	شماره صفحه فعلی
+from	integer	شماره اولین آیتم
+to	integer	شماره آخرین آیتم
+last_page	integer	شماره آخرین صفحه
+per_page	integer	تعداد آیتم در هر صفحه
+results	array	لیست سفارشات
+results[].id	integer	شناسه سفارش
+results[].market	string	نماد بازار
+results[].base_coin.symbol	string	نماد ارز
+results[].base_coin.name	string	نام انگلیسی ارز
+results[].base_coin.fa_name	string	نام فارسی ارز
+results[].base_coin.logo	string	آدرس لوگوی ارز
+results[].base_coin.coin_type	integer	نوع ارز
+results[].quote_coin.symbol	string	نماد ارز
+results[].quote_coin.name	string	نام انگلیسی ارز
+results[].quote_coin.fa_name	string	نام فارسی ارز
+results[].quote_coin.logo	string	آدرس لوگوی ارز
+results[].quote_coin.coin_type	integer	نوع ارز
+results[].side.index	integer	شناسه سمت سفارش (0: فروش، 1: خرید)
+results[].side.name	string	عنوان سمت سفارش
+results[].type.index	integer	شناسه نوع سفارش
+results[].type.name	string	عنوان نوع سفارش
+results[].maker	boolean	مشخص می‌کند سفارش Maker بوده یا خیر
+results[].status.index	integer	شناسه وضعیت سفارش
+results[].status.filter_index	integer	شناسه وضعیت برای فیلتر
+results[].status.filter_name	string	عنوان وضعیت برای فیلتر
+results[].fill_price	string	میانگین قیمت انجام‌شده
+results[].price	string	قیمت ثبت‌شده سفارش
+results[].value	string	مقدار سفارش
+results[].value_coin_symbol	string	نماد ارز مقدار سفارش
+results[].filled_percent	string	درصد انجام‌شده
+results[].filled_value	string	مقدار انجام‌شده
+results[].total	string	مبلغ کل سفارش
+results[].total_coin_symbol	string	نماد ارز مبلغ کل
+results[].total_commission	string	مجموع کارمزد
+results[].condition	string	شرط فعال‌سازی یا اجرا
+results[].trailing_price_condition	string	شرط قیمت Trailing Stop
+results[].activation_price_condition	string	شرط قیمت فعال‌سازی
+results[].delta	string	مقدار تغییر Trailing Stop
+results[].triggered_category_type	integer	نوع دسته‌بندی فعال‌شده
+results[].created_at	integer	زمان ثبت (Unix Timestamp)
+results[].updated_at	integer	زمان آخرین بروزرسانی (Unix Timestamp)
+جزئیات سفارش
+curl --location 'https://rest.bit24.cash/pro/capi/v2/spot-orders/details?id=67741392' \
+--header 'Accept: application/json' \
+--header 'X-BIT24-APIKEY: *******DDF**78*************186'
+در صورت فراخوانی درست، پاسخ به این صورت خواهد بود:
+
+{
+  "success": true,
+  "status_code": 200,
+  "error": null,
+  "data": {
+    "message": "",
+    "order": {
+      "id": 67749861,
+      "market": "DOGE/IRT",
+      "base_coin": {
+        "symbol": "DOGE",
+        "name": "Dogecoin",
+        "fa_name": "دوج کوین",
+        "logo": "https://exchange-storage.bit24app.com/exchange-stage/icons/c9718cb5-4651-45a1-850a-91000fc82b25.png",
+        "coin_type": 0
+      },
+      "quote_coin": {
+        "symbol": "IRT",
+        "name": "Toman",
+        "fa_name": "تومان",
+        "logo": "https://exchange-storage.bit24app.com/exchange-stage/icons/irt1.png",
+        "coin_type": 1
+      },
+      "side": {
+        "index": 1,
+        "name": "خرید"
+      },
+      "type": {
+        "index": 0,
+        "name": "با تعیین قیمت"
+      },
+      "maker": true,
+      "status": {
+        "index": 2,
+        "filter_index": 2,
+        "filter_name": "لغو شده"
+      },
+      "fill_price": null,
+      "price": "7200",
+      "value": "100",
+      "value_coin_symbol": "DOGE",
+      "filled_percent": "0",
+      "filled_value": "0",
+      "total": "720000",
+      "total_coin_symbol": "IRT",
+      "total_commission": "0",
+      "condition": "-",
+      "trailing_price_condition": "",
+      "activation_price_condition": "",
+      "delta": "% ",
+      "triggered_category_type": null,
+      "created_at": 1779540870,
+      "updated_at": 1779542131
+    },
+    "trades": []
+  }
+}
+در صورت تناقض توکن، پاسخ به این صورت خواهد بود:
+
+{
+  "success": false,
+  "status_code": 401,
+  "error": {
+    "message": "عدم احراز",
+    "errors": null
+  },
+  "data": null
+}
+در صورت فراخوانی نادرست آدرس، پاسخ به این صورت خواهد بود:
+
+{
+  "success": false,
+  "status_code": 404,
+  "error": {
+    "message": "صفحه مورد نظر یافت نشد",
+    "errors": null
+  },
+  "data": null
+}
+در صورت وجود خطا درون سرور، پاسخ به این صورت خواهد بود:
+
+{
+  "success": false,
+  "status_code": 500,
+  "error": {
+    "message": "خطایی در سرور رخ داده است.",
+    "errors": null
+  },
+  "data": null
+}
+برای جزئیات سفارش از این درخواست استفاده نمایید:
+
+درخواست: GET /pro/capi/v2/spot-orders/details
+محدودیت فراخوانی: 250 درخواست در دقیقه
+نیاز به ارسال توکن: دارد
+نیاز به ارسال کلید اختصاصی : ندارد
+پارامترهای ورودی
+پارامتر	نوع	پیش‌فرض	توضیحات	نمونه
+id	integer	الزامی	شناسه سفارش	67741392
+پارامترهای پاسخ(data)
+پارامتر	نوع	توضیحات
+message	string	پیام پاسخ
+order	object	اطلاعات سفارش
+order.id	integer	شناسه سفارش
+order.market	string	نماد بازار
+order.base_coin.symbol	string	نماد ارز
+order.base_coin.name	string	نام انگلیسی ارز
+order.base_coin.fa_name	string	نام فارسی ارز
+order.base_coin.logo	string	آدرس لوگوی ارز
+order.base_coin.coin_type	integer	نوع ارز
+order.quote_coin.symbol	string	نماد ارز
+order.quote_coin.name	string	نام انگلیسی ارز
+order.quote_coin.fa_name	string	نام فارسی ارز
+order.quote_coin.logo	string	آدرس لوگوی ارز
+order.quote_coin.coin_type	integer	نوع ارز
+order.side.index	integer	شناسه سمت سفارش (0: فروش، 1: خرید)
+order.side.name	string	عنوان سمت سفارش
+order.type.index	integer	شناسه نوع سفارش
+order.type.name	string	عنوان نوع سفارش
+order.maker	boolean	مشخص می‌کند سفارش Maker بوده یا خیر
+order.status.index	integer	شناسه وضعیت سفارش
+order.status.filter_index	integer	شناسه وضعیت برای فیلتر
+order.status.filter_name	string	عنوان وضعیت برای فیلتر
+order.fill_price	string	میانگین قیمت انجام‌شده
+order.price	string	قیمت ثبت‌شده سفارش
+order.value	string	مقدار سفارش
+order.value_coin_symbol	string	نماد ارز مقدار سفارش
+order.filled_percent	string	درصد انجام‌شده
+order.filled_value	string	مقدار انجام‌شده
+order.total	string	مبلغ کل سفارش
+order.total_coin_symbol	string	نماد ارز مبلغ کل
+order.total_commission	string	مجموع کارمزد
+order.condition	string	شرط فعال‌سازی یا اجرا
+order.trailing_price_condition	string	شرط قیمت Trailing Stop
+order.activation_price_condition	string	شرط قیمت فعال‌سازی
+order.delta	string	مقدار تغییر Trailing Stop
+order.triggered_category_type	integer	نوع دسته‌بندی فعال‌شده
+order.created_at	integer	زمان ثبت (Unix Timestamp)
+order.updated_at	integer	زمان آخرین بروزرسانی (Unix Timestamp)
+trades	array	لیست معاملات انجام‌شده
+trades[].id	integer	شناسه معامله
+trades[].market	string	نماد بازار
+trades[].base_coin.symbol	string	نماد ارز
+trades[].base_coin.name	string	نام انگلیسی ارز
+trades[].base_coin.fa_name	string	نام فارسی ارز
+trades[].base_coin.logo	string	آدرس لوگوی ارز
+trades[].base_coin.coin_type	integer	نوع ارز
+trades[].quote_coin.symbol	string	نماد ارز
+trades[].quote_coin.name	string	نام انگلیسی ارز
+trades[].quote_coin.fa_name	string	نام فارسی ارز
+trades[].quote_coin.logo	string	آدرس لوگوی ارز
+trades[].quote_coin.coin_type	integer	نوع ارز
+trades[].role.index	integer	نقش کاربر (0: Taker، 1: Maker)
+trades[].role.name	string	عنوان نقش
+trades[].price	string	قیمت معامله
+trades[].value	string	مقدار معامله
+trades[].total	string	مبلغ کل معامله
+trades[].commission	string	کارمزد معامله
+trades[].commission_discount_percent	string	درصد تخفیف کارمزد
+trades[].created_at	integer	زمان ثبت (Unix Timestamp)
+trades[].updated_at	integer	زمان بروزرسانی (Unix Timestamp)
+ثبت سفارش
+curl --location 'https://rest.bit24.cash/pro/capi/v2/spot-orders/submit' \
+--header 'Accept: application/json' \
+--header 'Content-Type: application/x-www-form-urlencoded' \
+--header 'X-BIT24-APIKEY: *******DDF**78*************186' \
+--data-urlencode 'base_coin_symbol=USDT' \
+--data-urlencode 'quote_coin_symbol=IRT' \
+--data-urlencode 'side=1' \
+--data-urlencode 'type=0' \
+--data-urlencode 'amount=10' \
+--data-urlencode 'price=100000'
+در صورت فراخوانی درست، پاسخ به این صورت خواهد بود:
+
+{
+  "success": true,
+  "status_code": 200,
+  "error": null,
+  "data": {
+    "message": "ثبت سفارش با موفقیت انجام شد.",
+    "spot_order": {
+      "id": 70323903,
+      "market": "USDT/IRT",
+      "base_coin": {
+        "symbol": "USDT",
+        "name": "Tether",
+        "fa_name": "تتر",
+        "logo": "https://exchange-storage.bit24app.com/exchange-stage/icons/596ac4ed-3c63-45cf-9f30-c28646ec0532.png",
+        "coin_type": 0
+      },
+      "quote_coin": {
+        "symbol": "IRT",
+        "name": "Toman",
+        "fa_name": "تومان",
+        "logo": "https://exchange-storage.bit24app.com/exchange-stage/icons/irt1.png",
+        "coin_type": 1
+      },
+      "side": {
+        "index": 1,
+        "name": "خرید"
+      },
+      "type": {
+        "index": 0,
+        "name": "با تعیین قیمت"
+      },
+      "maker": false,
+      "status": {
+        "index": 0,
+        "filter_index": 0,
+        "filter_name": "در حال انجام"
+      },
+      "fill_price": null,
+      "price": "180000",
+      "value": "100",
+      "value_coin_symbol": "USDT",
+      "filled_percent": "0",
+      "filled_value": "0",
+      "total": "18000000",
+      "total_coin_symbol": "IRT",
+      "total_commission": "0",
+      "condition": "-",
+      "trailing_price_condition": "",
+      "activation_price_condition": "",
+      "delta": "% ",
+      "triggered_category_type": null,
+      "created_at": 1781946175,
+      "updated_at": 1781946175
+    }
+  }
+}
+در صورت تناقض ورودی، پاسخ به این صورت خواهد بود:
+
+{
+  "success": false,
+  "status_code": 422,
+  "error": {
+    "message": "خطا در اعتبار سنجی ورودی ها",
+    "errors": [
+      {
+        "reason": "field",
+        "message": "فیلد مورد نظر الزامی است."
+      }
+    ]
+  },
+  "data": null
+}
+در صورت درخواست با ورودی نا مناسب، پاسخ به این صورت خواهد بود:
+
+{
+  "success": false,
+  "status_code": 400,
+  "error": {
+    "message": "درخواست نامعتبر است.",
+    "errors": null
+  },
+  "data": null
+}
+در صورت تناقض توکن، پاسخ به این صورت خواهد بود:
+
+{
+  "success": false,
+  "status_code": 401,
+  "error": {
+    "message": "عدم احراز",
+    "errors": null
+  },
+  "data": null
+}
+در صورت فراخوانی نادرست آدرس، پاسخ به این صورت خواهد بود:
+
+{
+  "success": false,
+  "status_code": 404,
+  "error": {
+    "message": "صفحه مورد نظر یافت نشد",
+    "errors": null
+  },
+  "data": null
+}
+در صورت وجود خطا درون سرور، پاسخ به این صورت خواهد بود:
+
+{
+  "success": false,
+  "status_code": 500,
+  "error": {
+    "message": "خطایی در سرور رخ داده است.",
+    "errors": null
+  },
+  "data": null
+}
+برای ثبت سفارش از این درخواست استفاده نمایید:
+
+درخواست: POST /pro/capi/v2/spot-orders/submit
+محدودیت فراخوانی: 250 درخواست در دقیقه
+نیاز به ارسال توکن: دارد
+نیاز به ارسال کلید اختصاصی : دارد
+پارامترهای ورودی
+پارامتر	نوع	پیش‌فرض	توضیحات	نمونه
+base_coin_symbol	string	الزامی	نماد ارز پایه	USDT
+quote_coin_symbol	string	الزامی	نماد ارز متقابل	IRT
+side	integer	الزامی	سمت سفارش	1
+type	integer	الزامی	نوع سفارش	0
+amount	string	الزامی	مقدار سفارش	100
+price	string	الزامی	قیمت سفارش (در Market و Stop Market استفاده نمی‌شود)	100000
+stop_price	string	اختیاری	قیمت شرط (Stop Limit، Stop Market، OCO، Trailing Stop)	90000
+trigger_price	string	اختیاری	قیمت فعال‌سازی (OCO، Trailing Stop)	100000
+delta	string	اختیاری	مقدار تغییر (Trailing Stop)	0.5
+amount_coin_symbol	string	اختیاری	نماد ارز مقدار سفارش (برای Market)	USDT
+پارامتر	توضیحات مقادیر
+side	0: فروش، 1: خرید
+type	0: Limit، 1: Market، 2: Stop Limit، 3: OCO، 4: Stop Market، 5: Trailing Stop
+پارامترهای پاسخ(data)
+فیلد	نوع	توضیح
+message	string	پیام موفقیت ثبت سفارش.
+spot_order	object	اطلاعات سفارش اسپات ثبت‌شده.
+data.spot_order
+فیلد	نوع	توضیح
+id	integer	شناسه یکتای سفارش.
+market	string	نماد بازار معامله. مثال: USDT/IRT.
+base_coin	object	اطلاعات ارز پایه.
+quote_coin	object	اطلاعات ارز مظنه.
+side	object	اطلاعات نوع سمت سفارش.
+type	object	اطلاعات نوع سفارش.
+maker	boolean	مشخص می‌کند سفارش از نوع میکر است یا خیر.
+status	object	وضعیت فعلی سفارش.
+fill_price	string	null
+price	string	قیمت سفارش.
+value	string	مقدار سفارش بر اساس value_coin_symbol.
+value_coin_symbol	string	نماد ارزی که مقدار سفارش با آن بیان شده است.
+filled_percent	string	درصد انجام‌شده سفارش.
+filled_value	string	مقدار انجام‌شده سفارش.
+total	string	مبلغ کل سفارش بر اساس total_coin_symbol.
+total_coin_symbol	string	نماد ارزی که مبلغ کل با آن نمایش داده شده است.
+total_commission	string	مجموع کارمزد سفارش.
+condition	string	مقدار شرط سفارش.
+trailing_price_condition	string	مقدار شرط قیمت دنبال‌کننده.
+activation_price_condition	string	مقدار شرط قیمت فعال‌سازی.
+delta	string	مقدار اختلاف یا دلتا در منطق سفارش شرطی.
+triggered_category_type	integer	null
+created_at	integer	زمان ایجاد سفارش به‌صورت Unix timestamp.
+updated_at	integer	زمان آخرین به‌روزرسانی سفارش به‌صورت Unix timestamp.
+data.spot_order.base_coin
+فیلد	نوع	توضیح
+symbol	string	نماد ارز.
+name	string	نام انگلیسی ارز.
+fa_name	string	نام فارسی ارز.
+logo	string	لینک لوگوی ارز.
+coin_type	integer	شناسه نوع ارز.
+data.spot_order.quote_coin
+فیلد	نوع	توضیح
+symbol	string	نماد ارز.
+name	string	نام انگلیسی ارز.
+fa_name	string	نام فارسی ارز.
+logo	string	لینک لوگوی ارز.
+coin_type	integer	شناسه نوع ارز.
+data.spot_order.side
+فیلد	نوع	توضیح
+index	integer	شناسه عددی سمت سفارش.
+name	string	عنوان سمت سفارش. مثال: خرید.
+data.spot_order.type
+فیلد	نوع	توضیح
+index	integer	شناسه عددی نوع سفارش.
+name	string	عنوان نوع سفارش.
+data.spot_order.status
+فیلد	نوع	توضیح
+index	integer	شناسه عددی وضعیت سفارش.
+filter_index	integer	شناسه عددی فیلتر وضعیت.
+filter_name	string	عنوان فیلتر وضعیت.
+خطاهای احتمالی با وضعیت 400
+کد خطا	مقدار	توضیحات
+SPOT_ORDER_SERVICE_DISABLED	-1001	سرویس ثبت سفارش اسپات غیرفعال است
+SPOT_ORDER_MIN_NOTIONAL	-1005	مبلغ سفارش کمتر از حداقل مجاز بازار است
+INVALID_STOP_PRICE	-1016	قیمت شرط نامعتبر است
+INVALID_LIMIT_PRICE	-1017	قیمت Limit نامعتبر است
+PRICE_LIMITATION	-1022	قیمت خارج از محدوده مجاز بازار است
+ALL_MARKETS_DISABLED	-1023	تمامی بازارها غیرفعال هستند
+ASSET_DECREASE_FAILED	-1004	کاهش موجودی کاربر با خطا مواجه شده است
+لغو سفارش
+curl --location 'https://rest.bit24.cash/pro/capi/v2/spot-orders/cancel' \
+--header 'Accept: application/json' \
+--header 'Content-Type: application/x-www-form-urlencoded' \
+--header 'X-BIT24-APIKEY: *******DDF**78*************186' \
+--data-urlencode 'order_id=65325988'
+در صورت فراخوانی درست، پاسخ به این صورت خواهد بود:
+
+{
+  "success": true,
+  "status_code": 200,
+  "error": null,
+  "data": {
+    "message": "لغو سفارش/سفارشات با موفقیت انجام شد."
+  }
+}
+در صورت درخواست با ورودی نا مناسب، پاسخ به این صورت خواهد بود:
+
+{
+  "success": false,
+  "status_code": 400,
+  "error": {
+    "code": "-1007",
+    "message": "سفارش/سفارشات قابل لغو یافت نشد",
+    "errors": null
+  },
+  "data": null
+}
+در صورت تناقض توکن، پاسخ به این صورت خواهد بود:
+
+{
+  "success": false,
+  "status_code": 401,
+  "error": {
+    "message": "عدم احراز",
+    "errors": null
+  },
+  "data": null
+}
+در صورت فراخوانی نادرست آدرس، پاسخ به این صورت خواهد بود:
+
+{
+  "success": false,
+  "status_code": 404,
+  "error": {
+    "message": "صفحه مورد نظر یافت نشد",
+    "errors": null
+  },
+  "data": null
+}
+در صورت وجود خطا درون سرور، پاسخ به این صورت خواهد بود:
+
+{
+  "success": false,
+  "status_code": 500,
+  "error": {
+    "message": "خطایی در سرور رخ داده است.",
+    "errors": null
+  },
+  "data": null
+}
+برای لغو سفارش از این درخواست استفاده نمایید:
+
+درخواست: POST /pro/capi/v2/spot-orders/cancel
+محدودیت فراخوانی: 250 درخواست در دقیقه
+نیاز به ارسال توکن: دارد
+نیاز به ارسال کلید اختصاصی : دارد
+ در صورت ارسال نشدن `order_id`، تمام سفارشات در حال انجام لغو می‌شوند.
+ برای لغو سفارش حتماً از متد POST استفاده نمایید.
+پارامترهای ورودی
+پارامتر	نوع	پیش‌فرض	توضیحات	نمونه
+order_id	integer	اختیاری	شناسه سفارش. در صورت ارسال نشدن، تمام سفارشات در حال انجام لغو می‌شوند	65325988
+type	integer	اختیاری	نوع سفارش برای فیلتر لغو	0
+پارامتر	توضیحات مقادیر
+type	0: Limit، 1: Market، 2: Stop Limit، 3: OCO، 4: Stop Market، 5: Trailing Stop
+پارامترهای پاسخ(data)
+پارامتر	نوع	توضیحات
+message	string	پیام نتیجه لغو سفارش
+خطاهای احتمالی با وضعیت 400
+کد خطا	مقدار	توضیحات
+ORDER_NOT_CANCELABLE	-1007	سفارش/سفارشات قابل لغو یافت نشد
+ویرایش سفارش
+curl --location 'https://rest.bit24.cash/pro/capi/v2/spot-orders/edit' \
+--header 'Accept: application/json' \
+--header 'Content-Type: application/x-www-form-urlencoded' \
+--header 'X-BIT24-APIKEY: *******DDF**78*************186' \
+--data-urlencode 'id=68806200' \
+--data-urlencode 'amount=12' \
+--data-urlencode 'price=186000'
+در صورت فراخوانی درست، پاسخ به این صورت خواهد بود:
+
+{
+  "success": true,
+  "status_code": 200,
+  "error": null,
+  "data": {
+    "message": "سفارش USDT/IRT با موفقیت ویرایش شد."
+  }
+}
+در صورت درخواست با ورودی نا مناسب، پاسخ به این صورت خواهد بود:
+
+{
+  "success": false,
+  "status_code": 400,
+  "error": {
+    "message": "درخواست نامعتبر است.",
+    "errors": null
+  },
+  "data": null
+}
+در صورت تناقض توکن، پاسخ به این صورت خواهد بود:
+
+{
+  "success": false,
+  "status_code": 401,
+  "error": {
+    "message": "عدم احراز",
+    "errors": null
+  },
+  "data": null
+}
+در صورت فراخوانی نادرست آدرس، پاسخ به این صورت خواهد بود:
+
+{
+  "success": false,
+  "status_code": 404,
+  "error": {
+    "message": "صفحه مورد نظر یافت نشد",
+    "errors": null
+  },
+  "data": null
+}
+در صورت وجود خطا درون سرور، پاسخ به این صورت خواهد بود:
+
+{
+  "success": false,
+  "status_code": 500,
+  "error": {
+    "message": "خطایی در سرور رخ داده است.",
+    "errors": null
+  },
+  "data": null
+}
+برای ویرایش سفارش از این درخواست استفاده نمایید:
+
+درخواست: POST /pro/capi/v2/spot-orders/edit
+محدودیت فراخوانی: 250 درخواست در دقیقه
+نیاز به ارسال توکن: دارد
+نیاز به ارسال کلید اختصاصی : دارد
+پارامترهای ورودی
+پارامتر	نوع	پیش‌فرض	توضیحات	نمونه
+id	integer	الزامی	شناسه سفارش	68806200
+amount	string	الزامی	مقدار جدید سفارش	12
+price	string	الزامی	قیمت جدید سفارش (در Market و Stop Market استفاده نمی‌شود)	186000
+پارامترهای پاسخ(data)
+پارامتر	نوع	توضیحات
+message	string	پیام نتیجه ویرایش سفارش
+خطاهای احتمالی با وضعیت 400
+کد خطا	مقدار	توضیحات
+PRICE_LIMITATION	-1022	قیمت خارج از محدوده مجاز بازار است
+INVALID_ORDER_STATUS	-1027	وضعیت سفارش برای ویرایش معتبر نیست
+SPOT_ORDER_MIN_NOTIONAL	-1005	مبلغ سفارش کمتر از حداقل مجاز بازار است
+INVALID_ORDER_AVAILABLE_AMOUNT	-1024	مقدار باقی‌مانده سفارش معتبر نیست
+ORDER_NOT_UPDATED	-1025	سفارش بروزرسانی نشد
+SPOT_ORDER_IS_NOT_EDITABLE	-1026	سفارش قابل ویرایش نیست
+تعقیب قیمت سفارش (Chase Order)
+curl --location 'https://rest.bit24.cash/pro/capi/v2/spot-orders/chase' \
+--header 'Accept: application/json' \
+--header 'Content-Type: application/x-www-form-urlencoded' \
+--header 'X-BIT24-APIKEY: *******DDF**78*************186' \
+--data-urlencode 'id=68806200'
+در صورت فراخوانی درست، پاسخ به این صورت خواهد بود:
+
+{
+  "success": true,
+  "status_code": 200,
+  "error": null,
+  "data": {
+    "message": "تعقیب قیمت با موفقیت ثبت شد."
+  }
+}
+در صورت درخواست با ورودی نا مناسب، پاسخ به این صورت خواهد بود:
+
+{
+  "success": false,
+  "status_code": 400,
+  "error": {
+    "message": "درخواست نامعتبر است.",
+    "errors": null
+  },
+  "data": null
+}
+در صورت تناقض توکن، پاسخ به این صورت خواهد بود:
+
+{
+  "success": false,
+  "status_code": 401,
+  "error": {
+    "message": "عدم احراز",
+    "errors": null
+  },
+  "data": null
+}
+در صورت فراخوانی نادرست آدرس، پاسخ به این صورت خواهد بود:
+
+{
+  "success": false,
+  "status_code": 404,
+  "error": {
+    "message": "صفحه مورد نظر یافت نشد",
+    "errors": null
+  },
+  "data": null
+}
+در صورت وجود خطا درون سرور، پاسخ به این صورت خواهد بود:
+
+{
+  "success": false,
+  "status_code": 500,
+  "error": {
+    "message": "خطایی در سرور رخ داده است.",
+    "errors": null
+  },
+  "data": null
+}
+قابلیت Chase Order برای بروزرسانی خودکار قیمت سفارش بر اساس بهترین قیمت موجود در دفتر سفارشات استفاده می‌شود. در سفارش‌های فروش، قیمت با بهترین قیمت فروش (Best Ask) و در سفارش‌های خرید با بهترین قیمت خرید (Best Bid) هماهنگ می‌شود.
+
+برای تعقیب قیمت سفارش از این درخواست استفاده نمایید:
+
+درخواست: POST /pro/capi/v2/spot-orders/chase
+محدودیت فراخوانی: 250 درخواست در دقیقه
+نیاز به ارسال توکن: دارد
+نیاز به ارسال کلید اختصاصی : دارد
+پارامترهای ورودی
+پارامتر	نوع	پیش‌فرض	توضیحات	نمونه
+id	integer	الزامی	شناسه سفارش	68806200
+پارامترهای پاسخ(data)
+پارامتر	نوع	توضیحات
+message	string	پیام نتیجه تعقیب قیمت
+خطاهای احتمالی با وضعیت 400
+کد خطا	مقدار	توضیحات
+CHASING_EMPTY_ORDER_BOOK	-1028	دفتر سفارشات خالی است
+ORDER_PRICE_IS_BEST_CHASE_FAILED	-1029	قیمت سفارش هم‌اکنون برابر بهترین قیمت بازار است
+PRICE_LIMITATION	-1022	قیمت جدید خارج از محدوده مجاز بازار است
+INVALID_ORDER_STATUS	-1027	وضعیت سفارش برای تعقیب قیمت معتبر نیست
+SPOT_ORDER_MIN_NOTIONAL	-1005	مبلغ سفارش کمتر از حداقل مجاز بازار است
+INVALID_ORDER_AVAILABLE_AMOUNT	-1024	مقدار باقی‌مانده سفارش معتبر نیست
+ORDER_NOT_UPDATED	-1025	بروزرسانی سفارش انجام نشد
+SPOT_ORDER_IS_NOT_EDITABLE	-1026	سفارش قابل ویرایش نیست
+مفاهیم HTTP CODE
+کد HTTP	عنوان	توضیحات	‌
+200	OK	درخواست دریافت و پاسخ داده شده .	
+422	Unprocessable Entity	پارامتر ارسالی نادرست است یا ارسال نشده است.	
+400	Bad Request	سرور قادر به پردازش دیتای ورودی نیست.	
+401	عدم احراز	کاربر احراز هویت نشده است	
+404	صفحه مورد نظر یافت نشد	آدرس یا شی مد نظر وجود ندارد	
+500	Internal Server Error	مشکلی به صورت موقت در سرور رخ داده است	
+shell
+plaintext
