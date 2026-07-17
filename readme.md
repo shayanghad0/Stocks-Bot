@@ -1,4 +1,4 @@
-This Repository is for froex bot for exchange have a Stocks like Amazon Apple Microsoft and simmiler 
+This Repository is for Stocks bot for exchange have a Stocks like Amazon Apple Microsoft and simmiler 
 like exchange bit24.cash (an iranian exchange)
 
 
