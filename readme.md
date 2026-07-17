@@ -90,13 +90,13 @@ flowchart TD
 
 ## 🧪 Demo vs. Real
 
-| Aspect               | Demo (`/demo`)                                   | Real (`/real`)                                   |
-|----------------------|--------------------------------------------------|--------------------------------------------------|
-| **API Base URL**     | `http://localhost:3001` (mock server)            | Actual Bit24 API endpoints or another exchange                       |
-| **Authentication**   | Any token (not validated)                        | Requires a valid API token                 |
-| **Order execution**  | Simulated (returns dummy success)                | Real market/limit orders on Bit24 or another exchange                 |
-| **Purpose**          | Test logic, strategy, and report generation      | Live trading with real funds                     |
-| **Risk**             | No financial risk                                | **Use at your own risk** – real money involved   |
+| Aspect               | Demo (`/demo`)                                 | Real (`/real`)                                   |
+|----------------------|------------------------------------------------|--------------------------------------------------|
+| **API Base URL**     | `http://localhost:3001` (mock server)          | Actual Bit24 API endpoints or another exchange   |
+| **Authentication**   | Any token (not validated)                      | Requires a valid API token                       |
+| **Order execution**  | Simulated (returns dummy success)              | Real market/limit orders on Bit24/another exchange|
+| **Purpose**          | Test logic, strategy, and report generation    | Live trading with real funds                     |
+| **Risk**             | No financial risk                              | **Use at your own risk** – real money involved   |
 
 > **Always test thoroughly with the demo before running the real bot!**
 
