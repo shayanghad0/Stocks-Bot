@@ -41,7 +41,7 @@ X-BIT24-APIKEY: *******DDF**78*************186
 
 در این صفحه می توانید IP هایی که می توانند از این توکن استفاده کنند را مشخص کنید.
 
-PHP-EXAMPLE: $signature = hash_hmac('sha256', $prameters,$secret_key);
+PHP-EXAMPLE: $signature = hash_hmac('sha256', $parameters,$secret_key);
 در صورت عدم ارسال یا نادرست بودن مقدار signature، پاسخ به این صورت خواهد بود:
 
 {
