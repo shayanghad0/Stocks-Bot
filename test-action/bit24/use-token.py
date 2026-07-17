@@ -76,7 +76,7 @@ def test_connection():
         sys.stdout.write(".")
         sys.stdout.flush()
         time.sleep(0.15)
-    print(" And Successfull Check")
+    print(" And Successful Check")
     return True
 
 
