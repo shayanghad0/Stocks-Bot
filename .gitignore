@@ -2,3 +2,7 @@ prompt.txt
 .env
 trade.json
 codespell-output.txt
+/note
+bot/bi24/Note/
+demo/trade_report.html
+demo/balance_chart.png
