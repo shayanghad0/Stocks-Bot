@@ -1,0 +1,178 @@
+name: Branch Sync Bot
+
+on:
+  schedule:
+    - cron: '0 3 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  sync-branches:
+    name: Check & Sync Branches
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Find outdated branches and sync
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          DEFAULT_BRANCH="${{ github.event.repository.default_branch }}"
+          echo "Default branch: $DEFAULT_BRANCH"
+
+          # Get all remote branches except HEAD and default
+          BRANCHES=$(git branch -r --format='%(refname:short)' \
+            | grep -v "origin/HEAD" \
+            | grep -v "origin/${DEFAULT_BRANCH}" \
+            | sed 's|origin/||' || true)
+
+          if [ -z "$BRANCHES" ]; then
+            echo "No other branches found. Nothing to sync."
+            exit 0
+          fi
+
+          echo "Branches to check:"
+          echo "$BRANCHES"
+          echo ""
+
+          for BRANCH in $BRANCHES; do
+            echo "============================================"
+            echo "  Checking: $BRANCH"
+            echo "============================================"
+
+            # Fetch latest
+            git fetch origin "$BRANCH" 2>/dev/null || continue
+
+            # Check how many commits behind/ahead
+            BEHIND=$(git rev-list --count "origin/${BRANCH}..origin/${DEFAULT_BRANCH}" 2>/dev/null || echo "0")
+            AHEAD=$(git rev-list --count "origin/${DEFAULT_BRANCH}..origin/${BRANCH}" 2>/dev/null || echo "0")
+
+            echo "  Behind master by: $BEHIND commits"
+            echo "  Ahead of master by: $AHEAD commits"
+
+            if [ "$BEHIND" -eq 0 ]; then
+              echo "  -> Branch is up to date. Skipping."
+              echo ""
+              continue
+            fi
+
+            echo "  -> Branch is $BEHIND commits behind master. Checking for existing PR..."
+
+            # Check if an existing PR already exists for this branch -> master
+            EXISTING_PR=$(gh pr list \
+              --base "$DEFAULT_BRANCH" \
+              --head "$BRANCH" \
+              --state open \
+              --json number \
+              --jq '.[0].number' 2>/dev/null || echo "")
+
+            if [ -n "$EXISTING_PR" ]; then
+              echo "  -> Found existing PR #${EXISTING_PR}. Updating it..."
+
+              # Update the branch by rebasing onto master
+              git checkout -b "sync-${BRANCH}" "origin/${BRANCH}" 2>/dev/null || continue
+              git rebase "origin/${DEFAULT_BRANCH}" 2>/dev/null || {
+                echo "  -> Rebase conflict. Skipping $BRANCH."
+                git checkout --detach 2>/dev/null || true
+                git branch -D "sync-${BRANCH}" 2>/dev/null || true
+                continue
+              }
+
+              # Force push updated branch
+              git push origin "sync-${BRANCH}:${BRANCH}" --force 2>/dev/null || {
+                echo "  -> Push failed for $BRANCH. Skipping."
+                git checkout --detach 2>/dev/null || true
+                git branch -D "sync-${BRANCH}" 2>/dev/null || true
+                continue
+              }
+
+              # Get updated commit count after rebase
+              NEW_BEHIND=$(git rev-list --count "origin/${BRANCH}..origin/${DEFAULT_BRANCH}" 2>/dev/null || echo "0")
+
+              # Update PR description
+              gh pr comment "$EXISTING_PR" --body "## Branch Auto-Synced
+
+          cc @shayanghad0
+
+          This PR has been automatically updated by the Branch Sync Bot.
+
+          **Branch:** \`${BRANCH}\` -> \`${DEFAULT_BRANCH}\`
+          **Commits behind:** ${BEHIND} -> ${NEW_BEHIND}
+          **Last sync:** $(date -u +'%Y-%m-%d %H:%M UTC')
+
+          ${NEW_BEHIND:-0} commit(s) from \`${DEFAULT_BRANCH}\` have been rebased into this branch." 2>/dev/null || true
+
+              git checkout --detach 2>/dev/null || true
+              git branch -D "sync-${BRANCH}" 2>/dev/null || true
+
+              echo "  -> Updated PR #${EXISTING_PR}"
+              echo ""
+            else
+              echo "  -> No existing PR. Creating new one..."
+
+              # Create sync branch
+              git checkout -b "sync-${BRANCH}" "origin/${DEFAULT_BRANCH}" 2>/dev/null || continue
+
+              # Get the diff stats
+              CHANGED_FILES=$(git diff --name-only "origin/${DEFAULT_BRANCH}".."origin/${BRANCH}" 2>/dev/null || echo "")
+              FILE_COUNT=$(echo "$CHANGED_FILES" | grep -c . 2>/dev/null || echo "0")
+
+              # Get commit list
+              COMMITS=$(git log --oneline "origin/${DEFAULT_BRANCH}..origin/${BRANCH}" 2>/dev/null || echo "")
+              COMMIT_COUNT=$(echo "$COMMITS" | grep -c . 2>/dev/null || echo "0")
+
+              # Create PR
+              gh pr create \
+                --title "sync: Update \`${BRANCH}\` from \`${DEFAULT_BRANCH}\` (${BEHIND} commits behind)" \
+                --body "## Branch Sync
+
+          cc @shayanghad0
+
+          This PR was automatically created by the Branch Sync Bot to keep \`${BRANCH}\` up to date with \`${DEFAULT_BRANCH}\`.
+
+          ### Summary
+          - **Branch:** \`${BRANCH}\`
+          - **Commits behind:** ${BEHIND}
+          - **Files changed:** ${FILE_COUNT}
+
+          ### Commits to merge:
+          \`\`\`
+          ${COMMITS}
+          \`\`\`
+
+          ### Files affected:
+          \`\`\`
+          ${CHANGED_FILES}
+          \`\`\`
+
+          ---
+          *Auto-generated by Branch Sync Bot. Review and merge to update your branch.*" \
+                --base "$BRANCH" \
+                --head "$DEFAULT_BRANCH" 2>/dev/null || {
+                  echo "  -> PR creation failed for $BRANCH."
+                  git checkout --detach 2>/dev/null || true
+                  git branch -D "sync-${BRANCH}" 2>/dev/null || true
+                  continue
+                }
+
+              git checkout --detach 2>/dev/null || true
+              git branch -D "sync-${BRANCH}" 2>/dev/null || true
+
+              echo "  -> Created new PR for $BRANCH"
+              echo ""
+            fi
+          done
+
+          echo "============================================"
+          echo "  SYNC COMPLETE"
+          echo "============================================"
