@@ -8,4 +8,4 @@ Just star the repository, fork it, put your code named after the exchange, and t
 
 and must be work like a dmeo file we have on [demo folder](../demo)
 
-Thnak YOU
+Thank YOU
