@@ -1,6 +1,7 @@
 import requests
 import sys
 import time
+import os
 
 # ---------------------------
 # 1. User inputs
@@ -55,13 +56,6 @@ for i in range(1, grids + 1):
         'triggered': False
     })
 
-# Display the grid
-print("Grid levels:")
-for idx, g in enumerate(grids_info, start=1):
-    level_str = f"{int(g['level'])}" if g['level'].is_integer() else f"{g['level']:.2f}"
-    print(f"grid {idx} : {level_str} ({g['label']})")
-print("\nStarting price monitoring... (Press Ctrl+C to stop)\n")
-
 # ---------------------------
 # 4. API helper functions
 # ---------------------------
@@ -89,56 +83,76 @@ def get_balances():
         return None
 
 # ---------------------------
-# 5. Main monitoring loop
+# 5. Monitoring loop with auto‑update
 # ---------------------------
-# Keep track of which buy grid levels have been triggered
-# (We only place one buy per grid level)
-triggered_buy_levels = set()
+previous_price = price
+balances = get_balances()
 
 try:
     while True:
-        current_price = get_current_price()
-        print(f"[{time.strftime('%H:%M:%S')}] Current price: {current_price:.2f}")
+        # Clear screen for live update
+        os.system('cls' if os.name == 'nt' else 'clear')
 
-        # Check each grid level
-        for idx, g in enumerate(grids_info):
+        # Fetch fresh price
+        current_price = get_current_price()
+
+        # --- Check for crossings and execute orders ---
+        for g in grids_info:
             level = g['level']
             label = g['label']
             triggered = g['triggered']
 
-            # ---------- BUY logic ----------
+            # BUY: price crosses DOWN through the level
             if label == "BUY" and not triggered:
-                # If price falls to or below the BUY level, execute market buy
-                if current_price <= level:
-                    print(f"🔽 Price {current_price:.2f} <= BUY level {level:.2f} → placing BUY order")
+                if previous_price > level and current_price <= level:
+                    print(f"🔽 Price crossed BUY level {level:.2f} → placing BUY order")
                     order_resp = place_market_buy(amount_usdt)
                     if order_resp:
-                        # Mark this grid as triggered
                         g['triggered'] = True
-                        triggered_buy_levels.add(level)
-                        # Show updated balances
-                        balances = get_balances()
-                        if balances:
-                            print("Updated balances:", balances)
+                        balances = get_balances()   # refresh after order
                     else:
                         print("Order failed, will retry on next cycle.")
-                    # Small delay to avoid flooding
-                    time.sleep(1)
+                    time.sleep(0.5)
 
-            # ---------- SELL logic (placeholder) ----------
+            # SELL: placeholder for crossing UP
             elif label == "SELL" and not triggered:
-                # We don't have a sell endpoint, but we can print a suggestion
-                if current_price >= level:
-                    print(f"🔼 Price {current_price:.2f} >= SELL level {level:.2f} → would SELL here (implement sell endpoint)")
-                    # Optionally mark as triggered to avoid repeated messages
-                    g['triggered'] = True  # comment out if you want to keep seeing it
+                if previous_price < level and current_price >= level:
+                    print(f"🔼 Price crossed SELL level {level:.2f} → would SELL here")
+                    # Uncomment and implement sell endpoint if available
+                    # g['triggered'] = True   # uncomment to avoid repeated messages
+
+        # --- Refresh balances periodically ---
+        if balances is None:
+            balances = get_balances()
+
+        # --- Build the dashboard ---
+        print(f"⚡ GRID TRADING DASHBOARD  |  {time.strftime('%Y-%m-%d %H:%M:%S')}")
+        print(f"Symbol: {symbol}  |  Current Price: {current_price:.4f}  |  Grid %: {grid_percent}%\n")
+
+        # Grid table
+        print(f"{'Grid':<6} {'Level':<12} {'Type':<10} {'Status'}")
+        print("-" * 45)
+        for idx, g in enumerate(grids_info, start=1):
+            level_str = f"{int(g['level'])}" if g['level'].is_integer() else f"{g['level']:.2f}"
+            status = "✔ TRIGGERED" if g['triggered'] else "⏳ waiting"
+            print(f"{idx:<6} {level_str:<12} {g['label']:<10} {status}")
+
+        # Balances
+        if balances:
+            usdt = balances.get('USDT', 0)
+            coin_balance = balances.get('coins', {}).get(symbol, 0)
+            print(f"\n💰 USDT: {usdt:.2f}  |  {symbol}: {coin_balance:.6f}")
+        else:
+            print("\n⚠️ Unable to fetch balances")
+
+        # --- Update previous price for next iteration ---
+        previous_price = current_price
 
         # Wait before next poll
         time.sleep(5)
 
 except KeyboardInterrupt:
-    print("\nMonitoring stopped by user.")
-    # Show final balances
-    bal = get_balances()
-    if bal:
-        print("Final balances:", bal)
+    print("\n\nMonitoring stopped by user.")
+    final_bal = get_balances()
+    if final_bal:
+        print("Final balances:", final_bal)
