@@ -156,9 +156,6 @@ def export_html(filename):
     return filename
 
 
-
-
-
 # ---------- Animation helpers ----------
 def animated_input(prompt_text, frames=[">._.<", ">__.__<", ">._.<", ">.__.<"], cycles=8, delay=0.08):
     spinner = itertools.cycle(frames)
@@ -246,6 +243,9 @@ def submit_order(base_symbol: str, quote_symbol: str, side: int, order_type: int
     }
     if order_type == 1 and amount_coin_symbol:
         params["amount_coin_symbol"] = amount_coin_symbol
+
+    # اگر سفارش لیمیت باشد، قیمت باید ارسال شود (در کد فعلی از مارکت استفاده می‌کنیم)
+    # اما برای کامل شدن، می‌توان price را هم اضافه کرد.
 
     signature = generate_signature(params, SECRET_KEY)
     params["signature"] = signature
@@ -380,8 +380,8 @@ def do_buy(symbol, quote, amount, buy_price, fee_rate, trigger_type, amount_str=
     result = submit_order(
         base_symbol=symbol,
         quote_symbol=quote,
-        side=1,
-        order_type=1,
+        side=1,          # خرید
+        order_type=1,    # مارکت
         amount=amount_str,
         amount_coin_symbol=quote
     )
@@ -405,20 +405,24 @@ def do_sell(symbol, quote, coin_received, sell_price, fee_rate):
     sell_fee = coin_received * sell_price * fee_rate
     coin_to_sell = str(coin_received)
 
+    # 🔥 FIX: side باید 0 باشد برای فروش (نه 2)
     result = submit_order(
         base_symbol=symbol,
         quote_symbol=quote,
-        side=2,
-        order_type=1,
+        side=0,          # فروش
+        order_type=1,    # مارکت
         amount=coin_to_sell,
         amount_coin_symbol=symbol
     )
     order_data = result.get("spot_order", {})
     sell_order_id = order_data.get("id", "unknown")
 
+    # (اختیاری) می‌توان قیمت واقعی پر شدن را از order_data استخراج کرد
+    # fill_price = order_data.get("fill_price")  # ممکن است None باشد
+
     return {
         "sell_order_id": sell_order_id,
-        "sell_price": sell_price,
+        "sell_price": sell_price,   # قیمت تخمینی، در صورت نیاز از fill_price استفاده کنید
         "sell_fee": sell_fee
     }
 
@@ -791,6 +795,13 @@ if __name__ == "__main__":
         html_file = f"trade-{iran_date}.html"
         export_html(html_file)
 
-
+        # --- 3. Save end balance ---
+        if quote:
+            try:
+                balance = get_asset_balance(quote)
+                _bot_state["end_balance"] = float(balance)
+                print(f"  [3/3] End balance: {balance} {quote}")
+            except Exception as e:
+                print(f"  [3/3] Could not fetch balance: {e}")
 
         print(f"\n  Done. Goodbye!\n")

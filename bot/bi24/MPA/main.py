@@ -498,6 +498,7 @@ def do_buy(symbol, quote, amount, buy_price, fee_rate, trigger_type, amount_str=
     }
 
 
+# 🔥 FIX: side must be 0 for sell, not 2
 def do_sell(symbol, quote, coin_received, sell_price, fee_rate):
     sell_fee = coin_received * sell_price * fee_rate
     coin_to_sell = str(coin_received)
@@ -505,7 +506,7 @@ def do_sell(symbol, quote, coin_received, sell_price, fee_rate):
     result = submit_order(
         base_symbol=symbol,
         quote_symbol=quote,
-        side=2,
+        side=0,          # فروش = 0
         order_type=1,
         amount=coin_to_sell,
         amount_coin_symbol=symbol
@@ -586,7 +587,13 @@ def build_display(counter, current_price, trade, reference_price, mode,
         drop_trigger = reference_price * (1 - TRIGGER_THRESHOLD)
         lines.append(f"  Pump Buy >  : {pump_trigger:.8f} (+0.5%)")
         lines.append(f"  Drop Buy <  : {drop_trigger:.8f} (-0.5%)")
-        lines.append(f"  Sell At     : --- (+2.75%)")
+        # In waiting_trigger mode, no sell target until buy again
+    elif buy_price:
+        # In monitoring_sell mode, show sell target
+        tp_price = buy_price * (1 + PROFIT_THRESHOLD)
+        lines.append(f"  Sell Target : {tp_price:.8f} (+{PROFIT_THRESHOLD*100:.2f}%)")
+        # Also show pump/drop triggers? Those are only for after sell.
+        # We'll just show sell target.
     else:
         lines.append(f"  Waiting     : after sell...")
     lines.append("")
@@ -890,5 +897,14 @@ if __name__ == "__main__":
         print("\n  [3/3] Generating balance chart...")
         png_file = f"trade-{iran_date}.png"
         export_balance_png(png_file)
+
+        # Also store end balance for HTML report
+        if quote:
+            try:
+                balance = get_asset_balance(quote)
+                _bot_state["end_balance"] = float(balance)
+                print(f"        End balance: {balance} {quote}")
+            except Exception as e:
+                print(f"        Could not fetch balance: {e}")
 
         print(f"\n  Done. Goodbye!\n")
