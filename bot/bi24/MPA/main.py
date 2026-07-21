@@ -314,6 +314,15 @@ def get_asset_balance(symbol: str) -> str:
     return assets[0].get("balance", "0")
 
 
+def get_available_balance(symbol: str) -> float:
+    """Get the available (tradeable) balance from exchange API, not the local estimate."""
+    data = get_asset(symbol)
+    assets = data.get("asset", [])
+    if not assets:
+        return 0.0
+    return float(assets[0].get("available_balance", "0"))
+
+
 def check_market(symbol: str, quote: str) -> bool:
     data = get_asset(symbol)
     assets = data.get("asset", [])
@@ -468,8 +477,6 @@ def get_trade_count():
 def do_buy(symbol, quote, amount, buy_price, fee_rate, trigger_type, amount_str=None):
     fee = amount * fee_rate
     received_currency = amount - fee
-    amount_after_fee = amount * (1 - fee_rate)
-    coin_received = int((amount_after_fee / buy_price) * 100) / 100
 
     if amount_str is None:
         amount_str = str(int(amount)) if amount == int(amount) else str(amount)
@@ -487,11 +494,17 @@ def do_buy(symbol, quote, amount, buy_price, fee_rate, trigger_type, amount_str=
     if not order_id:
         return None
 
-    save_trade_record(symbol, quote, order_id, buy_price, coin_received, amount, fee, trigger_type)
+    # Wait for exchange to settle the order, then fetch real balance
+    print("  Waiting 10s for balance to settle...")
+    time.sleep(10)
+    real_balance = get_available_balance(symbol)
+    print(f"  Real balance from exchange: {real_balance} {symbol}")
+
+    save_trade_record(symbol, quote, order_id, buy_price, real_balance, amount, fee, trigger_type)
     return {
         "order_id": order_id,
         "buy_price": buy_price,
-        "coin_received": coin_received,
+        "coin_received": real_balance,
         "amount": amount,
         "fee": fee,
         "received_currency": received_currency
@@ -500,8 +513,13 @@ def do_buy(symbol, quote, amount, buy_price, fee_rate, trigger_type, amount_str=
 
 # 🔥 FIX: side must be 0 for sell, not 2
 def do_sell(symbol, quote, coin_received, sell_price, fee_rate):
-    sell_fee = coin_received * sell_price * fee_rate
-    coin_to_sell = str(coin_received)
+    # Fetch real balance from exchange — don't trust local estimate
+    real_balance = get_available_balance(symbol)
+    if real_balance <= 0:
+        raise Exception(f"Insufficient balance: {real_balance} {symbol}")
+
+    sell_fee = real_balance * sell_price * fee_rate
+    coin_to_sell = str(real_balance)
 
     result = submit_order(
         base_symbol=symbol,
@@ -517,7 +535,8 @@ def do_sell(symbol, quote, coin_received, sell_price, fee_rate):
     return {
         "sell_order_id": sell_order_id,
         "sell_price": sell_price,
-        "sell_fee": sell_fee
+        "sell_fee": sell_fee,
+        "real_balance_sold": real_balance
     }
 
 
@@ -764,7 +783,7 @@ def main():
                     print(f"")
                     print(f"  Buy Price     : {trade['buy_price']:.8f}")
                     print(f"  Sell Price    : {sell['sell_price']:.8f}")
-                    print(f"  Coin Sold     : {trade['coin_received']:.2f} {symbol}")
+                    print(f"  Coin Sold     : {sell['real_balance_sold']:.2f} {symbol}")
                     print(f"  Sell Fee      : {sell['sell_fee']:.2f} {quote}")
                     print(f"  Sell Order ID : {sell['sell_order_id']}")
                     print(f"  sell-status   : sell")
@@ -878,7 +897,7 @@ if __name__ == "__main__":
                     sell = do_sell(symbol, quote, trade["coin_received"], current, fee_rate)
                     update_sell_status(trade["order_id"], symbol, quote, "sell",
                                        sell["sell_price"], sell["sell_fee"])
-                    print(f"        Sold {trade['coin_received']:.2f} {symbol} at {current:.8f}")
+                    print(f"        Sold {sell['real_balance_sold']:.2f} {symbol} at {current:.8f}")
                     print(f"        Sell Fee: {sell['sell_fee']:.2f} {quote}")
                 except Exception as e:
                     print(f"        Sell failed: {e}")
